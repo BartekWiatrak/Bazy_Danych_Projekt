@@ -20,6 +20,12 @@ Aktywuj środowisko (Windows):
 .venv\Scripts\activate
 python -m uvicorn backend.main:app --reload
 
+Aktywuj środowisko (MacOS):
+
+source .venv/bin/activate
+python -m uvicorn backend.main:app --reload
+
+
 Backend działa na:
 
 API: http://127.0.0.1:8000/
@@ -29,8 +35,15 @@ Swagger (testy): http://127.0.0.1:8000/docs
 2) Frontend – React (Vite)
 W nowym terminalu:
 
+Windows:
+
 cd frontend
 npm run dev
+
+MacOS:
+
+cd frontend && npm run dev
+
 
 Frontend działa na:
 

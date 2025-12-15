@@ -1,4 +1,3 @@
-# backend/db.py
 import sqlite3
 from contextlib import contextmanager
 from pathlib import Path
@@ -10,6 +9,10 @@ DB_PATH = Path(__file__).resolve().parent.parent / "app.db"
 def get_db():
     conn = sqlite3.connect(DB_PATH)
     conn.row_factory = sqlite3.Row
+
+    # WAŻNE: włącz foreign keys w SQLite (inaczej ON DELETE CASCADE nie zadziała)
+    conn.execute("PRAGMA foreign_keys = ON;")
+
     try:
         yield conn
         conn.commit()
@@ -380,3 +383,54 @@ def anuluj_wypozyczenia(id_wypozyczenia: int):
         )
         if cur.rowcount == 0:
             raise ValueError("Nie można anulować tego wypożyczenia.")
+
+
+# -------------------- USUWANIE (NOWE) --------------------
+
+
+def delete_klient(id_klienta: int):
+    """
+    Usuwa klienta.
+    Blokuje usuwanie jeśli klient ma wypożyczenia (historia transakcji).
+    Dane_klienta usuną się automatycznie (ON DELETE CASCADE) — jeśli FK są włączone.
+    """
+    with get_db() as conn:
+        cur = conn.cursor()
+
+        cur.execute(
+            "SELECT 1 FROM Wypozyczenia WHERE id_klienta = ? LIMIT 1",
+            (id_klienta,),
+        )
+        if cur.fetchone() is not None:
+            raise ValueError("Nie można usunąć klienta, który ma wypożyczenia w historii.")
+
+        cur.execute("DELETE FROM Klienci WHERE id_klienta = ?", (id_klienta,))
+        if cur.rowcount == 0:
+            raise ValueError("Klient nie istnieje.")
+
+
+def delete_samochod(id_samochodu: int):
+    """
+    Usuwa samochód.
+    Blokuje usuwanie jeśli auto było kiedykolwiek wypożyczone lub ma reguły cennika.
+    """
+    with get_db() as conn:
+        cur = conn.cursor()
+
+        cur.execute(
+            "SELECT 1 FROM Wypozyczenia WHERE id_samochodu = ? LIMIT 1",
+            (id_samochodu,),
+        )
+        if cur.fetchone() is not None:
+            raise ValueError("Nie można usunąć samochodu, który występuje w wypożyczeniach.")
+
+        cur.execute(
+            "SELECT 1 FROM Cennik WHERE id_samochodu = ? LIMIT 1",
+            (id_samochodu,),
+        )
+        if cur.fetchone() is not None:
+            raise ValueError("Usuń najpierw reguły cennika dla tego samochodu.")
+
+        cur.execute("DELETE FROM Samochody WHERE id_samochodu = ?", (id_samochodu,))
+        if cur.rowcount == 0:
+            raise ValueError("Samochód nie istnieje.")

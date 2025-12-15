@@ -1,11 +1,7 @@
-# backend/main.py
 from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
-
-import db
-
-
+from backend import db
 
 app = FastAPI(title="Kaczy Wicher API")
 
@@ -103,6 +99,16 @@ def klienci_set_dane(id_klienta: int, dane: KlientDaneIn):
     return {"ok": True}
 
 
+# NOWE: usuwanie klienta
+@app.delete("/klienci/{id_klienta}")
+def klienci_delete(id_klienta: int):
+    try:
+        db.delete_klient(id_klienta)
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+    return {"ok": True}
+
+
 # --- Samochody ---
 
 
@@ -122,6 +128,16 @@ def samochody_add(sam: SamochodIn):
         sam.dostepnosc,
     )
     return {"id_samochodu": new_id}
+
+
+# NOWE: usuwanie samochodu
+@app.delete("/samochody/{id_samochodu}")
+def samochody_delete(id_samochodu: int):
+    try:
+        db.delete_samochod(id_samochodu)
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+    return {"ok": True}
 
 
 # --- Cennik ---
